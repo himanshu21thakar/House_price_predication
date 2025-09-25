@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import pickle  # Changed from joblib to pickle
 import base64
 
 # Page configuration with custom styling
@@ -197,9 +197,15 @@ load_css()
 @st.cache_resource
 def load_model():
     try:
-        return joblib.load("house_best_rf1.pkl")
+        # Changed from joblib.load to pickle.load
+        with open("house_best_rf1.pkl", "rb") as f:
+            model = pickle.load(f)
+        return model
     except FileNotFoundError:
         st.error("Model file 'house_best_rf1.pkl' not found. Please ensure the model file is in the correct directory.")
+        return None
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
         return None
 
 model = load_model()
