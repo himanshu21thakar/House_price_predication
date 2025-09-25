@@ -3,6 +3,16 @@ import pandas as pd
 import pickle  # Changed from joblib to pickle
 import base64
 
+# Fix sklearn compatibility issues
+import sklearn.compose._column_transformer as ct
+import sklearn.utils.fixes
+
+# Add missing attributes for older sklearn models
+if not hasattr(ct, '_RemainderColsList'):
+    ct._RemainderColsList = list
+if not hasattr(sklearn.utils.fixes, '_RemainderColsList'):
+    sklearn.utils.fixes._RemainderColsList = list
+
 # Page configuration with custom styling
 st.set_page_config(
     page_title="🏠 Luxe Property Predictor", 
@@ -197,15 +207,36 @@ load_css()
 @st.cache_resource
 def load_model():
     try:
-        # Changed from joblib.load to pickle.load
+        # Method 1: Try joblib first (more compatible with sklearn models)
+        try:
+            import joblib
+            model = joblib.load("house_best_rf1.pkl")
+            return model
+        except ImportError:
+            # If joblib is not available, use pickle with sklearn compatibility fixes
+            pass
+        
+        # Method 2: Use pickle with sklearn compatibility handling
+        import sklearn.utils.fixes
+        
+        # Set up compatibility for older sklearn versions
+        import sklearn.compose._column_transformer as ct
+        if not hasattr(ct, '_RemainderColsList'):
+            ct._RemainderColsList = list
+        
         with open("house_best_rf1.pkl", "rb") as f:
             model = pickle.load(f)
         return model
+        
     except FileNotFoundError:
         st.error("Model file 'house_best_rf1.pkl' not found. Please ensure the model file is in the correct directory.")
         return None
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
+        st.error("Try one of these solutions:")
+        st.error("1. Install joblib: pip install joblib")
+        st.error("2. Retrain and save the model with your current sklearn version")
+        st.error("3. Downgrade sklearn to match the model's version")
         return None
 
 model = load_model()
